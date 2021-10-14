@@ -85,12 +85,18 @@ func (us *Users) SearchUsers(ctx context.Context, s string) (chan User, error) {
 	go func() {
 		defer close(chout)
 		for {
-			u, ok := <-chin
-			if !ok {
+			// Селект - сидим и ждем, если ни один канал ничего не выдает просто ждем,
+			// нам не надо в цикле крутиться для этого.
+			select {
+			case <-ctx.Done():
 				return
+			case u, ok := <-chin:
+				if !ok {
+					return
+				}
+				u.Permissions = 0755
+				chout <- u
 			}
-			u.Permissions = 0755
-			chout <- u
 		}
 	}()
 	return chout, nil
