@@ -2,8 +2,9 @@ package starter
 
 import (
 	"context"
-	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 	"sync"
+
+	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 )
 
 // App Здесь мы должны стартануть приложение

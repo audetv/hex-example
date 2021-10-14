@@ -3,9 +3,10 @@ package usermemstore
 import (
 	"context"
 	"database/sql"
+	"sync"
+
 	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 	"github.com/google/uuid"
-	"sync"
 )
 
 // Для проверки, что соответствует интерфейсу юзер бизнес логики

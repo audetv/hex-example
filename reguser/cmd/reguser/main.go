@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/audetv/hex-ecample/reguser/internal/app/starter"
-	"github.com/audetv/hex-ecample/reguser/internal/db/mem/usermemstore"
 	"os"
 	"os/signal"
 	"sync"
+
+	"github.com/audetv/hex-ecample/reguser/internal/app/starter"
+	"github.com/audetv/hex-ecample/reguser/internal/db/mem/usermemstore"
 )
 
 func main() {
