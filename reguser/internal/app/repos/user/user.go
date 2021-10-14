@@ -42,6 +42,9 @@ func NewUsers(ustore UserStore) *Users {
 // Create чтобы не передавать пустого юзера, вернем указатель на юзера.
 // Получать будем полноценную карточку в виде структуры
 func (us *Users) Create(ctx context.Context, u User) (*User, error) {
+	// FIXME: здесь нужно использовать паттерн Unit of Work
+	// бизнес-транзакция, нужно создать транзакцию либо внутри бизнес логики, например заложить сюда мьютекс отдельный
+	// и везде его использовать в бизнес логике, либо создать транзакцию на уровне базы данных и в нтури нее выполнять операции
 	u.ID = uuid.New()
 	id, err := us.ustore.Create(ctx, u)
 	if err != nil {
@@ -52,6 +55,8 @@ func (us *Users) Create(ctx context.Context, u User) (*User, error) {
 }
 
 func (us *Users) Read(ctx context.Context, uid uuid.UUID) (*User, error) {
+	// FIXME: здесь нужно использовать паттерн Unit of Work
+	// бизнес-транзакция
 	u, err := us.ustore.Read(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("read user error: %w", err)
@@ -60,6 +65,8 @@ func (us *Users) Read(ctx context.Context, uid uuid.UUID) (*User, error) {
 }
 
 func (us *Users) Delete(ctx context.Context, uid uuid.UUID) (*User, error) {
+	// FIXME: здесь нужно использовать паттерн Unit of Work
+	// бизнес-транзакция
 	u, err := us.ustore.Read(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("search user err: %w", err)
@@ -74,6 +81,8 @@ func (us *Users) Delete(ctx context.Context, uid uuid.UUID) (*User, error) {
 // устанавливаем permissions и передаем в исходящий канал
 // вычитываем пользователей в бесконечном цикле
 func (us *Users) SearchUsers(ctx context.Context, s string) (chan User, error) {
+	// FIXME: здесь нужно использовать паттерн Unit of Work
+	// бизнес-транзакция
 	chin, err := us.ustore.SearchUsers(ctx, s)
 	if err != nil {
 		return nil, err
