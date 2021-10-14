@@ -33,6 +33,7 @@ type Users struct {
 // Create чтобы не передавать пустого юзера, вернем указатель на юзера.
 // Получать будем полноценную карточку в виде структуры
 func (us *Users) Create(u User) (*User, error) {
+	u.ID = uuid.New()
 	id, err := us.ustore.Create(u)
 	if err != nil {
 		return nil, fmt.Errorf("create user error: %w", err)
