@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -18,10 +19,10 @@ type User struct {
 // Read возвращает указатель на User, чтобы не передавать пустого User в случае ошибки.
 // Delete из системы хранения нам не надо возвращать самого юзера, т.к мы его прочитали в бизнес логике.
 type UserStore interface {
-	Create(u User) (*uuid.UUID, error)
-	Read(uid uuid.UUID) (*User, error)
-	Delete(uid uuid.UUID) error
-	SearchUsers(s string) (chan User, error)
+	Create(ctx context.Context, u User) (*uuid.UUID, error)
+	Read(ctx context.Context, uid uuid.UUID) (*User, error)
+	Delete(ctx context.Context, uid uuid.UUID) error
+	SearchUsers(ctx context.Context, s string) (chan User, error)
 }
 
 // Users коллекция объектов User, для того чтобы реализовать паттерн репозиторий,
@@ -40,9 +41,9 @@ func NewUsers(ustore UserStore) *Users {
 
 // Create чтобы не передавать пустого юзера, вернем указатель на юзера.
 // Получать будем полноценную карточку в виде структуры
-func (us *Users) Create(u User) (*User, error) {
+func (us *Users) Create(ctx context.Context, u User) (*User, error) {
 	u.ID = uuid.New()
-	id, err := us.ustore.Create(u)
+	id, err := us.ustore.Create(ctx, u)
 	if err != nil {
 		return nil, fmt.Errorf("create user error: %w", err)
 	}
@@ -50,30 +51,30 @@ func (us *Users) Create(u User) (*User, error) {
 	return &u, nil
 }
 
-func (us *Users) Read(uid uuid.UUID) (*User, error) {
-	u, err := us.ustore.Read(uid)
+func (us *Users) Read(ctx context.Context, uid uuid.UUID) (*User, error) {
+	u, err := us.ustore.Read(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("read user error: %w", err)
 	}
 	return u, nil
 }
 
-func (us *Users) Delete(uid uuid.UUID) (*User, error) {
-	u, err := us.ustore.Read(uid)
+func (us *Users) Delete(ctx context.Context, uid uuid.UUID) (*User, error) {
+	u, err := us.ustore.Read(ctx, uid)
 	if err != nil {
 		return nil, fmt.Errorf("search user err: %w", err)
 	}
 
 	// Чтобы вызвать delete, мы можем просто вызвать ошибку полученную из UserStore
-	return u, us.ustore.Delete(uid)
+	return u, us.ustore.Delete(ctx, uid)
 }
 
 // SearchUsers устанавливаем для примера permissions для юзера, на уровне бизнес логики,
 // система хранения ничего об этом не знает. Берем юзера из входящего канала,
 // устанавливаем permissions и передаем в исходящий канал
 // вычитываем пользователей в бесконечном цикле
-func (us *Users) SearchUsers(s string) (chan User, error) {
-	chin, err := us.ustore.SearchUsers(s)
+func (us *Users) SearchUsers(ctx context.Context, s string) (chan User, error) {
+	chin, err := us.ustore.SearchUsers(ctx, s)
 	if err != nil {
 		return nil, err
 	}
