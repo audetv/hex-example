@@ -1,6 +1,10 @@
 package starter
 
-import "github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
+import (
+	"context"
+	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
+	"sync"
+)
 
 // App Здесь мы должны стартануть приложение
 type App struct {
@@ -17,5 +21,9 @@ func NewApp(ust user.UserStore) *App {
 }
 
 // Serve пока ничего не делает, ему на вход не хватает api, который будет присылать запросы
-func (a *App) Serve() {
+// Пробрасываем контекст, чтобы отловить сигналы от операционной системы
+// и вейт группу, и в дефере завершаем ее
+func (a *App) Serve(ctx context.Context, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// <-ctx.Done()
 }
