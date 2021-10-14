@@ -30,6 +30,14 @@ type Users struct {
 	ustore UserStore
 }
 
+// NewUsers функция инициализации, пробрасываем систему хранения в виде юзерстора, будем возвращать юзерс,
+// Но не с пустым стором, а его надо принять на вход, возьмем в параметр: ustore UserStore и присвоем ustore: ustore
+func NewUsers(ustore UserStore) *Users {
+	return &Users{
+		ustore: ustore,
+	}
+}
+
 // Create чтобы не передавать пустого юзера, вернем указатель на юзера.
 // Получать будем полноценную карточку в виде структуры
 func (us *Users) Create(u User) (*User, error) {
