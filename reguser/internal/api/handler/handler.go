@@ -21,10 +21,10 @@ func NewRouter(us *user.Users) *Router {
 		ServeMux: http.NewServeMux(),
 		us:       us,
 	}
-	r.Handle("/create", http.HandlerFunc(r.CreateUser))
-	r.Handle("/read", http.HandlerFunc(r.ReadUser))
-	r.Handle("/delete", http.HandlerFunc(r.DeleteUser))
-	r.Handle("/search", http.HandlerFunc(r.SearchUser))
+	r.HandleFunc("/create", r.AuthMiddleware(http.HandlerFunc(r.CreateUser)).ServeHTTP)
+	r.HandleFunc("/read", r.AuthMiddleware(http.HandlerFunc(r.ReadUser)).ServeHTTP)
+	r.HandleFunc("/delete", r.AuthMiddleware(http.HandlerFunc(r.DeleteUser)).ServeHTTP)
+	r.HandleFunc("/search", r.AuthMiddleware(http.HandlerFunc(r.SearchUser)).ServeHTTP)
 	return r
 }
 
@@ -38,12 +38,24 @@ type User struct {
 	Permissions int       `json:"permissions"`
 }
 
+// AuthMiddleware принимает next http.Handler и возвращает http.Handler
+// это стандартного вида middleware стандартной библиотеке к горилле к чи роутеру и т.д
+func (rt *Router) AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// Проверяем авторизацию, если нет то 401 и выходим, а если все хорошо, то пробрасываем
+			// writer и reader дальше в next обработчик. Такими замыканиями можно выстроить целую цепочку из middlware,
+			// которые что-то делаю, до того как основные хэндлеры получат writer и reader
+			if u, p, ok := r.BasicAuth(); !ok || !(u == "admin" && p == "admin") {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+			next.ServeHTTP(w, r)
+		},
+	)
+}
+
 func (rt *Router) CreateUser(w http.ResponseWriter, r *http.Request) {
-	// Проверяем авторизацию, если нет то 401 и выходим.
-	if u, p, ok := r.BasicAuth(); !ok || !(u == "admin" && p == "admin") {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
 	// Body нужно закрывать, если начали из него читать, по умолчанию в handler в r http.Request приходят только заголовки
 	// На бади можно не смотреть и работать и читать только заголовки, а оставшееся тело будет проигнорировано
 	// и не будет даже загружено в память, если начинаем работать с телом, то реквест превращается в такой объект,
@@ -82,6 +94,8 @@ func (rt *Router) CreateUser(w http.ResponseWriter, r *http.Request) {
 		Permissions: nbu.Permissions,
 	})
 }
+
+// ReadUser надо повторить проверку авторизации, сделаем middleware
 func (*Router) ReadUser(w http.ResponseWriter, r *http.Request) {
 }
 func (*Router) DeleteUser(w http.ResponseWriter, r *http.Request) {
