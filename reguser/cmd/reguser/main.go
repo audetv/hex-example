@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"github.com/audetv/hex-ecample/reguser/internal/api/server"
+	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 	"os"
 	"os/signal"
 	"sync"
@@ -17,12 +19,15 @@ func main() {
 
 	ust := usermemstore.NewUsers()
 	a := starter.NewApp(ust)
+	us := user.NewUsers(ust)
+
+	srv := server.NewServer(":8000", us, nil)
 
 	// Канцелим контекст потом дожидаемся всех горутин
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
-	go a.Serve(ctx, wg)
+	go a.Serve(ctx, wg, srv)
 
 	<-ctx.Done()
 	cancel()
