@@ -22,9 +22,9 @@ func main() {
 	a := starter.NewApp(ust)
 	us := user.NewUsers(ust)
 
-	h := handler.NewRouter()
+	h := handler.NewRouter(us)
 
-	srv := server.NewServer(":8000", us, h)
+	srv := server.NewServer(":8000", h)
 
 	// Канцелим контекст потом дожидаемся всех горутин
 	wg := &sync.WaitGroup{}

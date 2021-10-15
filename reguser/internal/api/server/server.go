@@ -17,10 +17,8 @@ type Server struct {
 }
 
 // NewServer Адрес и порт передавать через параметр
-func NewServer(addr string, us *user.Users, h http.Handler) *Server {
-	s := &Server{
-		us: us,
-	}
+func NewServer(addr string, h http.Handler) *Server {
+	s := &Server{}
 
 	s.srv = http.Server{
 		Addr:              addr,
@@ -38,7 +36,8 @@ func NewServer(addr string, us *user.Users, h http.Handler) *Server {
 // В примере используем http. Но если просто вызвать, то листен остановится, значит делаем это в горутине.
 // Так же можно обработать ошибку и вывести например ее в логи, в общемто больше с ней нечего делать.
 
-func (s *Server) Start() {
+func (s *Server) Start(us *user.Users) {
+	s.us = us
 	go func() {
 		err := s.srv.ListenAndServe()
 		if err != nil {

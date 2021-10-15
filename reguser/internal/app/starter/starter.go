@@ -27,7 +27,7 @@ func NewApp(ust user.UserStore) *App {
 }
 
 type HTTPServer interface {
-	Start()
+	Start(us *user.Users)
 	Stop()
 }
 
@@ -37,7 +37,7 @@ type HTTPServer interface {
 func (a *App) Serve(ctx context.Context, wg *sync.WaitGroup, hs HTTPServer) {
 	defer wg.Done()
 	// вызываем старт
-	hs.Start()
+	hs.Start(a.us)
 	// дожидаемся здесь цтикс дана
 	<-ctx.Done()
 	// после того как все завершили, мы его останавливаем.
