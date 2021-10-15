@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/audetv/hex-ecample/reguser/internal/api/handler"
 	"github.com/audetv/hex-ecample/reguser/internal/api/server"
 	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 	"os"
@@ -21,7 +22,9 @@ func main() {
 	a := starter.NewApp(ust)
 	us := user.NewUsers(ust)
 
-	srv := server.NewServer(":8000", us, nil)
+	h := handler.NewRouter()
+
+	srv := server.NewServer(":8000", us, h)
 
 	// Канцелим контекст потом дожидаемся всех горутин
 	wg := &sync.WaitGroup{}
