@@ -21,7 +21,9 @@ func main() {
 	// Канцелим контекст потом дожидаемся всех горутин
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
+
 	go a.Serve(ctx, wg)
+
 	<-ctx.Done()
 	cancel()
 	wg.Wait()
