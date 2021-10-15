@@ -2,9 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 	"github.com/google/uuid"
-	"net/http"
 )
 
 // Здесь мы делаем наш Mux, который буде заниматься обработкой, всего чего нам надо.
@@ -28,14 +29,16 @@ func NewRouter(us *user.Users) *Router {
 }
 
 // User - реализует отдельную структуру, которая не зависит от бизнес логики.
+// Используем ее для получения данных юзера от клиента или отправки данных клиенту
 // Парсим, декодируем.
 type User struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
-	Data string    `json:"data"`
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Data        string    `json:"data"`
+	Permissions int       `json:"permissions"`
 }
 
-func (*Router) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (rt *Router) CreateUser(w http.ResponseWriter, r *http.Request) {
 	// Проверяем авторизацию, если нет то 401 и выходим.
 	if u, p, ok := r.BasicAuth(); !ok || !(u == "admin" && p == "admin") {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -48,6 +51,36 @@ func (*Router) CreateUser(w http.ResponseWriter, r *http.Request) {
 	// го должен явно знать, что мы закончили с ним работать, т.е его надо явно закрыть.
 	dec := json.NewDecoder(r.Body)
 	defer r.Body.Close()
+	u := User{}
+	if err := dec.Decode(&u); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	bu := user.User{
+		Name: u.Name,
+		Data: u.Data,
+	}
+	// У каждого запроса приходящего есть контекст внутри и его мы можем
+	// использовать и пробрасывать дальше в нужные нам методы, этот контекст канцелится если мы остановим сервер.
+	nbu, err := rt.us.Create(r.Context(), bu)
+	if err != nil {
+		http.Error(w, "error when creating user", http.StatusInternalServerError)
+		return
+	}
+	// Если создание пользователя произошло корректно, появляется заполненный айди у юзера,
+	// пермишены и мы можем вернуть это обратно клиенту. Создаем енкодер, ошибку проскипаем,
+	// тут маловероятно возникновение ошибки, разве что на самом потоке, если сетевой
+	// поток прервался, сетевое соединение, но тогда нам не о чем и некому сообщать возвращать эту ошибку,
+	// разве что залогировать. Но при успешном создании нужно вернуть код 201 Created,
+	// по умолчанию Encode возвращает код 200 OK, для этого надо указать код ответа.
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(User{
+		ID:          nbu.ID,
+		Name:        nbu.Name,
+		Data:        nbu.Data,
+		Permissions: nbu.Permissions,
+	})
 }
 func (*Router) ReadUser(w http.ResponseWriter, r *http.Request) {
 }

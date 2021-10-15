@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/audetv/hex-ecample/reguser/internal/api/handler"
-	"github.com/audetv/hex-ecample/reguser/internal/api/server"
-	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 	"os"
 	"os/signal"
 	"sync"
+
+	"github.com/audetv/hex-ecample/reguser/internal/api/handler"
+	"github.com/audetv/hex-ecample/reguser/internal/api/server"
+	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 
 	"github.com/audetv/hex-ecample/reguser/internal/app/starter"
 	"github.com/audetv/hex-ecample/reguser/internal/db/mem/usermemstore"

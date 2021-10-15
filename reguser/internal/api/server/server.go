@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
-	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
 )
 
 // Server принимает запросы, и вызывает бизнес логику
@@ -50,6 +51,6 @@ func (s *Server) Start(us *user.Users) {
 // Этот контекст сделаем с таймаутом
 func (s *Server) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	s.srv.Shutdown(ctx)
+	_ = s.srv.Shutdown(ctx)
 	cancel()
 }
