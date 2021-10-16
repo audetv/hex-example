@@ -130,9 +130,40 @@ func (rt *Router) ReadUser(w http.ResponseWriter, r *http.Request) {
 		Data:        nbu.Data,
 		Permissions: nbu.Permissions,
 	})
-
 }
-func (*Router) DeleteUser(w http.ResponseWriter, r *http.Request) {
+
+func (rt *Router) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	suid := r.URL.Query().Get("uid")
+	if suid == "" {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	uid, err := uuid.Parse(suid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if (uid == uuid.UUID{}) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	nbu, err := rt.us.Delete(r.Context(), uid)
+	// проверяем если db вернул ошибку sql.ErrNoRows, мы пробросили ее через %w, значит она будет распознана
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "error when reading user", http.StatusInternalServerError)
+		}
+		return
+	}
+	_ = json.NewEncoder(w).Encode(User{
+		ID:          nbu.ID,
+		Name:        nbu.Name,
+		Data:        nbu.Data,
+		Permissions: nbu.Permissions,
+	})
 }
 func (*Router) SearchUser(w http.ResponseWriter, r *http.Request) {
 }
