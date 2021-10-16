@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/audetv/hex-ecample/reguser/internal/app/repos/user"
@@ -58,6 +59,10 @@ func (rt *Router) AuthMiddleware(next http.Handler) http.Handler {
 }
 
 func (rt *Router) CreateUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	// Body нужно закрывать, если начали из него читать, по умолчанию в handler в r http.Request приходят только заголовки
 	// На бади можно не смотреть и работать и читать только заголовки, а оставшееся тело будет проигнорировано
 	// и не будет даже загружено в память, если начинаем работать с телом, то реквест превращается в такой объект,
@@ -100,6 +105,11 @@ func (rt *Router) CreateUser(w http.ResponseWriter, r *http.Request) {
 // ReadUser надо повторить проверку авторизации, сделаем middleware
 // read?uid=...
 func (rt *Router) ReadUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	suid := r.URL.Query().Get("uid")
 	if suid == "" {
 		http.Error(w, "bad request", http.StatusBadRequest)
@@ -133,6 +143,11 @@ func (rt *Router) ReadUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	suid := r.URL.Query().Get("uid")
 	if suid == "" {
 		http.Error(w, "bad request", http.StatusBadRequest)
@@ -165,5 +180,66 @@ func (rt *Router) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		Permissions: nbu.Permissions,
 	})
 }
-func (*Router) SearchUser(w http.ResponseWriter, r *http.Request) {
+
+// SearchUser /search?q=...
+func (rt *Router) SearchUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	// передаем контекст и строку запроса q и возвращается канал ch, в котором мы будем стримить юзеров
+	ch, err := rt.us.SearchUsers(r.Context(), q)
+	// Ошибка может произойти если она в самом сторе произошла.
+	// Там она возникает, только если мы в закрытом контексте находимся, по большому счету ее можно и проскипать.
+	if err != nil {
+		http.Error(w, "error when searching", http.StatusInternalServerError)
+		return
+	}
+	// Все выполняется в горутинах, соответственно здесь у нас тоже отдельная горутина.
+	// Каждый handler вызывается в отдельной горутине, которую принял http server на входе,
+	// когда к нему подконнектился клиент. Под каждый запрос клиента создается отдельная горутина в http сервере.
+	// И эта горутина в итоге приходит сюда в этот метод через роутер,
+	// Т.е на нужные обработчики приходит ровно одна горутина, связанная с одним запросом.
+	// Например, если клиент выполнил 10 запросов, то у нас запустится 10 горутин с SearchUsers хэндлером
+	// и они могут параллельно исполняться. Соответственно мы в отдельной горутине и у нас ничего не зависнет,
+	// если мы пытаться будем читать из этого канала. Но у нас есть два момента: есть cancel контексты,
+	// у нас есть какие-то ошибки возникающие при отправке. Делаем в бесконечном цикле через select
+
+	enc := json.NewEncoder(w)
+	first := true
+	fmt.Fprintf(w, "[")
+	defer fmt.Fprintln(w, "]")
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case u, ok := <-ch:
+			// Если у нас закрылся канал, а нам его закрыла бизнес логика,
+			// а бизнес логика его закрыла если его закрыла база данных, то тогда return
+			if !ok {
+				return
+			}
+			if first {
+				first = false
+			} else {
+				fmt.Fprintf(w, ",")
+			}
+			_ = enc.Encode(
+				User{
+					ID:          u.ID,
+					Name:        u.Name,
+					Data:        u.Data,
+					Permissions: u.Permissions,
+				},
+			)
+			w.(http.Flusher).Flush()
+		}
+	}
 }

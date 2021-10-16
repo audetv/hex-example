@@ -1,0 +1,28 @@
+# curl -u admin:admin -X POST -d '{"name":"user123","data":"user1"}' localhost:8000/create
+POST localhost:8000/create
+Authorization: Basic admin admin
+Content-Type: application/x-www-form-urlencoded
+
+{"name":"user123","data":"user1"}
+
+###
+
+
+POST http://localhost:8000/create
+Authorization: Basic YWRtaW46YWRtaW4=
+Content-Type: application/json
+
+{
+  "name": "Alex",
+  "date": "user124"
+}
+
+###
+GET http://localhost:8000/read?uid=95b9791e-aff3-4432-9624-12a12534e9df
+Authorization: Basic YWRtaW46YWRtaW4=
+Content-Type: application/json
+
+###
+# curl -u admin:admin -X GET localhost:8000/search?q=user
+GET localhost:8000/search?q=user
+Authorization: Basic admin admin
