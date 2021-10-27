@@ -11,23 +11,20 @@ import (
 	"github.com/google/uuid"
 )
 
-// Здесь мы делаем наш Mux, который буде заниматься обработкой, всего чего нам надо.
-// Попробуем сделать на стандартном простом ServeMux
+// Отдельно выносим пакет, который относится к самому роутеру, чтобы нам была возможность разные роутеры подключать
+// на одну и туже реализацию. Реализация у нас будет универсальная, немного модифицированный предыдущий пакет.
+// Полностью убрали из нее вещи связанные со связанностью, с конкретной реализацией роутера, дефолтного http.
+// Оставили 4 функции от нашего crud'а, который был. Каждая из этих функций оперирует карточкой user'а, которая
+// маршалится в json и размаршаливается из json'а и в каждую функцию передается какой-то контекст.
 
-type Router struct {
-	*http.ServeMux
+type Handlers struct {
 	us *user.Users
 }
 
-func NewRouter(us *user.Users) *Router {
-	r := &Router{
-		ServeMux: http.NewServeMux(),
-		us:       us,
+func NewRouter(us *user.Users) *Handlers {
+	r := &Handlers{
+		us: us,
 	}
-	r.HandleFunc("/create", r.AuthMiddleware(http.HandlerFunc(r.CreateUser)).ServeHTTP)
-	r.HandleFunc("/read", r.AuthMiddleware(http.HandlerFunc(r.ReadUser)).ServeHTTP)
-	r.HandleFunc("/delete", r.AuthMiddleware(http.HandlerFunc(r.DeleteUser)).ServeHTTP)
-	r.HandleFunc("/search", r.AuthMiddleware(http.HandlerFunc(r.SearchUser)).ServeHTTP)
 	return r
 }
 
